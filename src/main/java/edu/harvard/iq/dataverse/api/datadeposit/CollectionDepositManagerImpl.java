@@ -1,29 +1,22 @@
 package edu.harvard.iq.dataverse.api.datadeposit;
 
 import edu.harvard.iq.dataverse.Dataset;
-import edu.harvard.iq.dataverse.DatasetField;
 import edu.harvard.iq.dataverse.DatasetFieldServiceBean;
-import edu.harvard.iq.dataverse.DatasetFieldType;
-import edu.harvard.iq.dataverse.DatasetFieldValidator;
-import edu.harvard.iq.dataverse.DatasetFieldValue;
-import edu.harvard.iq.dataverse.DatasetVersion;
+import edu.harvard.iq.dataverse.DatasetServiceBean;
 import edu.harvard.iq.dataverse.Dataverse;
 import edu.harvard.iq.dataverse.DataverseServiceBean;
 import edu.harvard.iq.dataverse.DataverseUser;
 import edu.harvard.iq.dataverse.EjbDataverseEngine;
-import edu.harvard.iq.dataverse.engine.command.impl.CreateDatasetCommand;
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
+import edu.harvard.iq.dataverse.api.Dataverses;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Logger;
 import javax.ejb.EJB;
 import javax.inject.Inject;
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
-import org.apache.commons.io.FileUtils;
+import javax.json.JsonNumber;
+import javax.json.JsonObject;
+import javax.ws.rs.core.Response;
 import org.swordapp.server.AuthCredentials;
 import org.swordapp.server.CollectionDepositManager;
 import org.swordapp.server.Deposit;
@@ -39,6 +32,8 @@ public class CollectionDepositManagerImpl implements CollectionDepositManager {
     private static final Logger logger = Logger.getLogger(CollectionDepositManagerImpl.class.getCanonicalName());
     @EJB
     DataverseServiceBean dataverseService;
+    @EJB
+    DatasetServiceBean datasetService;
     @Inject
     SwordAuth swordAuth;
     @Inject
@@ -47,6 +42,8 @@ public class CollectionDepositManagerImpl implements CollectionDepositManager {
     EjbDataverseEngine engineSvc;
     @EJB
     DatasetFieldServiceBean datasetFieldService;
+    @Inject
+    Dataverses dataversesApi;
 
     @Override
     public DepositReceipt createNew(String collectionUri, Deposit deposit, AuthCredentials authCredentials, SwordConfiguration config)
@@ -95,103 +92,114 @@ public class CollectionDepositManagerImpl implements CollectionDepositManager {
                         }
 
                         /**
-                         * @todo think about the implications of no longer using
-                         * importStudy(), such as the comment below... do we
-                         * really need to write the XML to disk?
-                         */
-                        // instead of writing a tmp file, maybe importStudy() could accept an InputStream?
-                        String tmpDirectory = config.getTempDirectory();
-                        if (tmpDirectory == null) {
-                            throw new SwordError(UriRegistry.ERROR_BAD_REQUEST, "Could not determine temp directory");
-                        }
-                        String uploadDirPath = tmpDirectory + File.separator + "import" + File.separator + dvThatWillOwnDataset.getId();
-                        File uploadDir = new File(uploadDirPath);
-                        if (!uploadDir.exists()) {
-                            if (!uploadDir.mkdirs()) {
-                                logger.info("couldn't create directory: " + uploadDir.getAbsolutePath());
-                                throw new SwordServerException("Couldn't create upload directory.");
-                            }
-                        }
-                        String tmpFilePath = uploadDirPath + File.separator + "newStudyViaSwordv2.xml";
-                        File tmpFile = new File(tmpFilePath);
-                        try {
-                            FileUtils.writeStringToFile(tmpFile, deposit.getSwordEntry().getEntry().toString());
-                        } catch (IOException ex) {
-                            logger.info("couldn't write temporary file: " + tmpFile.getAbsolutePath());
-                            throw new SwordServerException("Couldn't write temporary file");
-                        } finally {
-                            uploadDir.delete();
-                        }
-
-                        /**
-                         * @todo properly create a dataset and datasetVersion
-                         */
-                        Dataset dataset = new Dataset();
-                        dataset.setOwner(dvThatWillOwnDataset);
-                        /**
                          * @todo don't hard code these! See also saving a
                          * dataset in GUI changes globalId to hard coded value
                          * (doi:10.5072/FK2/5555)
                          * https://redmine.hmdc.harvard.edu/issues/3993
                          */
-                        dataset.setProtocol("doi");
-                        dataset.setAuthority("myAuthority");
-                        dataset.setIdentifier(UUID.randomUUID().toString());
+                        String incomingProtocol = "doi";
+                        String incomingAuthority = "myAuthority";
+                        String incomingIdentifier = UUID.randomUUID().toString();
 
-                        DatasetVersion newDatasetVersion = dataset.getVersions().get(0);
-                        newDatasetVersion.setVersionState(DatasetVersion.VersionState.DRAFT);
-
-                        List<DatasetField> datasetFields = new ArrayList<>();
-                        DatasetField titleDatasetField = new DatasetField();
-                        DatasetFieldType titleDatasetFieldType = datasetFieldService.findByName("title");
-                        titleDatasetField.setDatasetFieldType(titleDatasetFieldType);
-                        List<DatasetFieldValue> datasetFieldValues = new ArrayList<>();
-                        DatasetFieldValue titleDatasetFieldValue = new DatasetFieldValue(titleDatasetField, dublinCore.get("title").get(0));
-                        datasetFieldValues.add(titleDatasetFieldValue);
-                        titleDatasetField.setDatasetFieldValues(datasetFieldValues);
-                        datasetFields.add(titleDatasetField);
-
-                        newDatasetVersion.setDatasetFields(datasetFields);
-
-                        try {
-                            // there is no importStudy method in 4.0 :(
-                            // study = studyService.importStudy(tmpFile, dcmiTermsFormatId, dvThatWillOwnStudy.getId(), vdcUser.getId());
-                            engineSvc.submit(new CreateDatasetCommand(dataset, dataverseUser));
-                        } catch (Exception ex) {
-//                            StringWriter stringWriter = new StringWriter();
-//                            ex.printStackTrace(new PrintWriter(stringWriter));
-//                            String stackTrace = stringWriter.toString();
-                            /**
-                             * @todo in DVN 3.x we printed the whole stack trace
-                             * here. Is that really necessary?
-                             */
-//                            throw new SwordError(UriRegistry.ERROR_BAD_REQUEST, "Couldn't import study: " + stackTrace);
-
-                            Throwable cause = ex;
-                            StringBuilder sb = new StringBuilder();
-                            sb.append(ex.getLocalizedMessage());
-                            while (cause.getCause() != null) {
-                                cause = cause.getCause();
-                                if (cause instanceof ConstraintViolationException) {
-                                    ConstraintViolationException constraintViolationException = (ConstraintViolationException) cause;
-                                    for (ConstraintViolation<?> violation : constraintViolationException.getConstraintViolations()) {
-                                        sb.append(" Invalid value: <<<").append(violation.getInvalidValue()).append(">>> for ")
-                                                .append(violation.getPropertyPath()).append(" at ")
-                                                .append(violation.getLeafBean()).append(" - ")
-                                                .append(violation.getMessage());
-                                    }
+                        /**
+                         * @todo obviously, this needs a lot of work. Do we like
+                         * the idea of re-using the createDataset method on the
+                         * "native" API? It take JSON as an argument, which is
+                         * why we're constructing it here. We can definitely
+                         * create the JSON in a cleaner way!
+                         */
+                        String incomingTitle = dublinCore.get("title").get(0);
+                        String incomingAuthor = dublinCore.get("creator").get(0);
+                        String incomingKeyword1 = dublinCore.get("subject").get(0);
+                        String incomingKeyword2 = dublinCore.get("subject").get(1);
+                        String incomingKeyword3 = dublinCore.get("subject").get(2);
+                        String jsonBody = "{\n"
+                                + "  \"authority\": \"" + incomingAuthority + "\",\n"
+                                + "  \"identifier\": \"" + incomingIdentifier + "\",\n"
+                                + "  \"persistentUrl\": \"http://dx.doi.org/10.5072/FK2/9\",\n"
+                                + "  \"protocol\": \"" + incomingProtocol + "\",\n"
+                                + "  \"initialVersion\": {\n"
+                                + "    \"metadataBlocks\": {\n"
+                                + "      \"citation\": {\n"
+                                + "        \"fields\": [\n"
+                                + "          {\n"
+                                + "            \"value\": \"" + incomingTitle + "\",\n"
+                                + "            \"typeClass\": \"primitive\",\n"
+                                + "            \"multiple\": false,\n"
+                                + "            \"typeName\": \"title\"\n"
+                                + "          },\n"
+                                + "          {\n"
+                                + "            \"value\": [\n"
+                                + "              {\n"
+                                + "                \"authorName\": {\n"
+                                + "                  \"value\": \"" + incomingAuthor + "\",\n"
+                                + "                  \"typeClass\": \"primitive\",\n"
+                                + "                  \"multiple\": false,\n"
+                                + "                  \"typeName\": \"authorName\"\n"
+                                + "                }\n"
+                                + "              }\n"
+                                + "            ],\n"
+                                + "            \"typeClass\": \"compound\",\n"
+                                + "            \"multiple\": true,\n"
+                                + "            \"typeName\": \"author\"\n"
+                                + "          },\n"
+                                + "          {\n"
+                                + "            \"value\": [\n"
+                                + "              \"" + incomingKeyword1 + "\",\n"
+                                + "              \"" + incomingKeyword2 + "s\",\n"
+                                + "              \"" + incomingKeyword3 + "\"\n"
+                                + "            ],\n"
+                                + "            \"typeClass\": \"primitive\",\n"
+                                + "            \"multiple\": true,\n"
+                                + "            \"typeName\": \"keyword\"\n"
+                                + "          },\n"
+                                + "          {\n"
+                                + "            \"value\": [\n"
+                                + "              \"Other\"\n"
+                                + "            ],\n"
+                                + "            \"typeClass\": \"controlledVocabulary\",\n"
+                                + "            \"multiple\": true,\n"
+                                + "            \"typeName\": \"subject\"\n"
+                                + "          }\n"
+                                + "        ],\n"
+                                + "        \"displayName\": \"Citation Metadata\"\n"
+                                + "      }\n"
+                                + "    },\n"
+                                + "    \"createTime\": \"2014-05-20 11:52:55 -04\",\n"
+                                + "    \"UNF\": \"UNF\",\n"
+                                + "    \"id\": 1,\n"
+                                + "    \"versionNumber\": 1,\n"
+                                + "    \"versionMinorNumber\": 0,\n"
+                                + "    \"versionState\": \"DRAFT\",\n"
+                                + "    \"distributionDate\": \"Distribution Date\",\n"
+                                + "    \"productionDate\": \"Production Date\"\n"
+                                + "  }\n"
+                                + "}";
+                        String parentDataverseId = dvThatWillOwnDataset.getId().toString();
+                        String apiKey = dataverseUser.getUserName();
+                        Response response = dataversesApi.createDataset(jsonBody, parentDataverseId, apiKey);
+                        JsonObject jsonResponse = (JsonObject) response.getEntity();
+                        String status = jsonResponse.getString("status");
+                        JsonNumber idOfDatasetCreated = null;
+                        if (status.equals("OK")) {
+                            JsonObject data = jsonResponse.getJsonObject("data");
+                            idOfDatasetCreated = data.getJsonNumber("id");
+                            if (idOfDatasetCreated != null) {
+                                Dataset newDataset = datasetService.find(idOfDatasetCreated.longValue());
+                                if (newDataset != null) {
+                                    ReceiptGenerator receiptGenerator = new ReceiptGenerator();
+                                    String baseUrl = urlManager.getHostnamePlusBaseUrlPath(collectionUri);
+                                    DepositReceipt depositReceipt = receiptGenerator.createReceipt(baseUrl, newDataset);
+                                    return depositReceipt;
+                                } else {
+                                    throw new SwordError(response.toString() + ":" + response.getStatusInfo() + ":" + jsonResponse.toString() + "\n" + "status: " + status.toString() + "\n" + "idOfDatasetCreated: " + idOfDatasetCreated);
                                 }
+                            } else {
+                                throw new SwordError(response.toString() + ":" + response.getStatusInfo() + ":" + jsonResponse.toString() + "\n" + "status: " + status.toString() + "\n" + "idOfDatasetCreated: " + idOfDatasetCreated);
                             }
-                            logger.info(sb.toString());
-                            throw new SwordError(UriRegistry.ERROR_BAD_REQUEST, "Couldn't create dataset: " + sb.toString());
-                        } finally {
-                            tmpFile.delete();
-                            uploadDir.delete();
+                        } else {
+                            throw new SwordError(response.toString() + ":" + response.getStatusInfo() + ":" + jsonResponse.toString() + "\n" + "status: " + status.toString() + "\n" + "idOfDatasetCreated: " + idOfDatasetCreated);
                         }
-                        ReceiptGenerator receiptGenerator = new ReceiptGenerator();
-                        String baseUrl = urlManager.getHostnamePlusBaseUrlPath(collectionUri);
-                        DepositReceipt depositReceipt = receiptGenerator.createReceipt(baseUrl, dataset);
-                        return depositReceipt;
                     } else if (deposit.isBinaryOnly()) {
                         // get here with this:
                         // curl --insecure -s --data-binary "@example.zip" -H "Content-Disposition: filename=example.zip" -H "Content-Type: application/zip" https://sword:sword@localhost:8181/dvn/api/data-deposit/v1/swordv2/collection/dataverse/sword/
