@@ -116,34 +116,36 @@
                                         <p:message for="affiliation"/>
                                     </p:panelGrid>
                                 </div>
-                            </div>
-                            <div class="col-xs-6 form-group">
 
-                                <label class="col-sm-3 control-label" for="dataverseType">
+                                <label class="col-sm-3 control-label" for="dataverseCategory">
                                     <a href="#" data-toggle="tooltip" data-placement="auto right" class="tooltiplabel right" data-original-title="The type that most closely reflects this Dataverse.">
-                                        Dataverse Type <span class="glyphicon glyphicon-asterisk text-danger" title="Required field"></span>
+                                        Category <span class="glyphicon glyphicon-asterisk text-danger" title="Required field"></span>
                                     </a>
                                 </label>  
-                                <div class="col-sm-8">
-                                    <h:selectOneMenu id="dataverseType" value="#{DataversePage.dataverse.dataverseType}">
-                                        <f:selectItem id="dvSelect" itemLabel="Select one..." itemValue="" />
-                                        <f:selectItem id="dvResearch" itemLabel="Researchers" itemValue="RESEARCHERS" />
-                                        <f:selectItem id="dvResearchProj" itemLabel="Research Projects" itemValue="RESEARCH_PROJECTS" />
-                                        <f:selectItem id="dvJournals" itemLabel="Journals" itemValue="JOURNALS" />
-                                        <f:selectItem id="dvOrgInst" itemLabel="Organizations and Institutions" itemValue="ORGANIZATIONS_INSTITUTIONS" />
-                                        <f:selectItem id="dvTeaching" itemLabel="Teaching Courses" itemValue="TEACHING_COURSES" />
-                                        <f:selectItem id="dvUncategorized" itemLabel="Uncategorized" itemValue="UNCATEGORIZED" />
-                                    </h:selectOneMenu>
+                                <div class="col-sm-9">
+                                    <p:panelGrid columns="2">
+                                        <h:selectOneMenu id="dataverseCategory" styleClass="form-control" value="#{DataversePage.dataverse.dataverseType}">
+                                            <f:selectItem id="dvSelect" itemLabel="Select one..." itemValue="" />
+                                            <f:selectItem id="dvResearch" itemLabel="Researchers" itemValue="RESEARCHERS" />
+                                            <f:selectItem id="dvResearchProj" itemLabel="Research Projects" itemValue="RESEARCH_PROJECTS" />
+                                            <f:selectItem id="dvJournals" itemLabel="Journals" itemValue="JOURNALS" />
+                                            <f:selectItem id="dvOrgInst" itemLabel="Organizations &amp; Institutions" itemValue="ORGANIZATIONS_INSTITUTIONS" />
+                                            <f:selectItem id="dvTeaching" itemLabel="Teaching Courses" itemValue="TEACHING_COURSES" />
+                                            <f:selectItem id="dvUncategorized" itemLabel="Uncategorized" itemValue="UNCATEGORIZED" />
+                                        </h:selectOneMenu>
+                                        <p:message for="dataverseCategory"/>
+                                    </p:panelGrid>
                                 </div>
-
+                            </div>
+                            <div class="col-xs-6 form-group">
                                 <label class="col-sm-3 control-label" for="description">
                                     <a href="#" data-toggle="tooltip" data-placement="auto right" class="tooltiplabel right" data-original-title="A summary describing the purpose, nature, or scope of this Dataverse.">
                                         Description
                                     </a>
                                 </label>
-                                <div class="col-sm-8">
+                                <div class="col-sm-9">
                                     <p:inputTextarea id="description" styleClass="form-control" value="#{DataversePage.dataverse.description}"
-                                                     rows="5" cols="50"
+                                                     rows="6" cols="50"
                                                      autoResize="false">
                                     </p:inputTextarea>
                                     <div><span id="chars"/> characters remaining</div>
@@ -203,7 +205,7 @@
 
                         <div id="actionButtonBlock" class="clearfix" style="margin-bottom:1em;">
                             <!-- Edit Button -->
-                            <ui:fragment rendered="#{!dataverseSession.user.guest and empty DataversePage.editMode and
+                            <ui:fragment rendered="#{!dataverseSession.user.guest and
                                                      permissionServiceBean.on(DataversePage.dataverse).canIssueCommand('UpdateDataverseCommand')}">
                                 <div class="pull-right" style="margin-left:1em;">
                                     <div class="btn-group">
@@ -229,7 +231,12 @@
                                                     <h:outputText value="General Information" />
                                                 </p:commandLink>
                                             </li>
-                                            <ui:fragment rendered="#{!empty DataversePage.featuredDataverses.source  or !empty DataversePage.featuredDataverses.target}">
+                                            <li>
+                                                <p:commandLink id="themeWidgetsOpts" onclick="themeAndWidgetsForm.show()">                                                          
+                                                    <h:outputText value="Theme + Widgets" />
+                                                </p:commandLink>
+                                            </li>
+                                            <ui:fragment rendered="#{!empty DataversePage.featuredDataverses.source or !empty DataversePage.featuredDataverses.target}">
                                                 <li>
                                                     <p:commandLink id="browseOpts" onclick="browseOptsForm.show()">                                                          
                                                         <h:outputText value="Browsing Options" />
@@ -241,6 +248,12 @@
                                                     <h:outputText value="Roles + Permissions" />
                                                     <f:param name="dataverseId" value="#{DataversePage.dataverse.id}" />
                                                     <f:param name="objectType" value="USERS" />
+                                                </h:link>
+                                            </li>
+                                            <li>
+                                                <h:link id="manageTemplates" styleClass="ui-commandlink ui-widget" outcome="manage-templates">
+                                                    <h:outputText value="Dataset Templates" />
+                                                    <f:param name="dataverseId" value="#{DataversePage.dataverse.id}" />
                                                 </h:link>
                                             </li>
                                             <ui:fragment rendered="#{DataversePage.isEmptyDataverse() and !(DataversePage.dataverse.owner == null) 
@@ -257,7 +270,7 @@
                                 </div>
                             </ui:fragment>
                             <!-- Release Button -->
-                            <ui:fragment rendered="#{!dataverseSession.user.guest and empty DataversePage.editMode and
+                            <ui:fragment rendered="#{!dataverseSession.user.guest and
                                                      permissionServiceBean.on(DataversePage.dataverse).canIssueCommand('PublishDataverseCommand')}">
                                 <div style="float:right; margin-left:1em;">
                                     <ui:fragment rendered="#{!DataversePage.dataverse.released and (empty DataversePage.dataverse.owner or DataversePage.dataverse.owner.released)}">
@@ -272,7 +285,7 @@
                                     </ui:fragment>
                                 </div>
                             </ui:fragment>
-                            <ui:fragment rendered="#{empty DataversePage.editMode}">
+                            <ui:fragment rendered="true">
                                 <div style="float:right;">
                                     <button type="button" class="btn btn-default" onclick="contact_confirmation.show()">
                                         <span class="glyphicon glyphicon-envelope" style="margin-right:.3em;"/> Email Dataverse Contact
@@ -282,57 +295,84 @@
                             <p:confirmDialog message="Dataverse 4.0 Beta cannot email dataverse contacts. Look for this feature in Dataverse 4.0!" header="Email Dataverse Contact" widgetVar="contact_confirmation">                                           
                             </p:confirmDialog>                                                                
                         </div>
-                        <ui:fragment rendered="#{empty DataversePage.editMode}">
-                            <div id="dataverseDesc" style="margin-bottom:1em;">
-                                <h:outputText value="#{DataversePage.dataverse.description}"/>
-                            </div>
-                        </ui:fragment>
-                        <ui:fragment rendered="#{DataversePage.dataverse.displayFeatured and (!empty DataversePage.carouselFeaturedDataverses)}">
-                            <div style="overflow: hidden;">
-                                <div class="clearfix"><strong>Featured Dataverses</strong></div>
-                                <div class="customNavigation" style="width:4%;float:left;padding:28px 0;">
-                                    <a class="btn prev1" title="Previous"><span class="glyphicon glyphicon-chevron-left" style="color:#999999;font-size:2em;"></span></a>
+
+                        <ui:fragment rendered="#{SearchIncludeFragment.filterQueries.size() == 0 and SearchIncludeFragment.mode != SearchIncludeFragment.searchModeString}">
+                            <ui:fragment rendered="#{!empty DataversePage.dataverse.description}">
+                                <div id="dataverseDesc" style="margin-bottom:1em;">
+                                    <h:outputText value="#{DataversePage.dataverse.description}"/>
                                 </div>
-                                <div id="typeDataversesList" class="owl-carousel owl-theme" style="width:90%;float:left;">
-                                    <ui:repeat value="#{DataversePage.carouselFeaturedDataverses}" var="dv" varStatus="status">
-                                        <div class="item">
-                                            <img src="#{dv.logo}" style="height:60px;" border="0" alt="Dataverse" rendered="#{!empty dv.logo}"/>
-                                            <a  href="/dataverse.xhtml?id=#{dv.id}">
-                                                <h:outputText value="#{dv.name} Dataverse"/>
-                                            </a>
+                            </ui:fragment>
+                            <ui:fragment rendered="#{DataversePage.dataverse.displayFeatured or DataversePage.dataverse.displayByType}">
+                                <div id="carouselBlocksWrapper" style="border-bottom:1px solid #ddd; margin-bottom:1em;">
+                                    <ui:fragment rendered="#{DataversePage.dataverse.displayFeatured and (!empty DataversePage.carouselFeaturedDataverses)}">
+                                        <div id="featuredDataversesBlock" style="overflow: hidden; padding-top:.5em; border-top:1px solid #ddd;">
+                                            <div class="clearfix"><strong>Featured Dataverses</strong></div>
+                                            <div class="customNavigation" style="width:4%;float:left;padding:28px 0;">
+                                                <a class="btn prev1" title="Previous"><span class="glyphicon glyphicon-chevron-left" style="color:#999999;font-size:2em;"></span></a>
+                                            </div>
+                                            <div id="featuredDataversesList" class="owl-carousel owl-theme" style="width:90%;float:left;">
+                                                <ui:repeat value="#{DataversePage.carouselFeaturedDataverses}" var="dv" varStatus="status">
+                                                    <div class="item" style="min-height:80px;">
+                                                        <ui:fragment rendered="#{empty dv.logo}">
+                                                            <a href="/dataverse.xhtml?id=#{dv.id}" title="#{dv.name} Dataverse" style="display:block;">
+                                                                <img src="/resources/images/icon_dataverse.png" style="height:60px;" alt="#{dv.name} Dataverse"/>
+                                                            </a>
+                                                        </ui:fragment>
+                                                        <ui:fragment rendered="#{!empty dv.logo and dv.logoFormat == 'SQUARE'}">
+                                                            <a href="/dataverse.xhtml?id=#{dv.id}" title="#{dv.name} Dataverse" style="display:block;">
+                                                                <img src="/logos/#{dv.logo}" style="max-width:60px;max-height:60px;" alt="#{dv.name} Dataverse"/>
+                                                            </a>
+                                                        </ui:fragment>
+                                                        <ui:fragment rendered="#{!empty dv.logo and dv.logoFormat == 'RECTANGLE'}">
+                                                            <a href="/dataverse.xhtml?id=#{dv.id}" title="#{dv.name} Dataverse" style="display:block;">
+                                                                <img src="/logos/#{dv.logo}" style="max-width:210px;max-height:60px;" alt="#{dv.name} Dataverse"/>
+                                                            </a>
+                                                        </ui:fragment>
+                                                        <a href="/dataverse.xhtml?id=#{dv.id}" title="#{dv.name} Dataverse" style="display:block;">
+                                                            <h:outputText value="#{dv.name} Dataverse"/>
+                                                        </a>
+                                                    </div>
+                                                </ui:repeat>
+                                            </div>
+                                            <div class="customNavigation" style="width:4%;float:left;padding:28px 0;">
+                                                <a class="btn next1" title="Next"><span class="glyphicon glyphicon-chevron-right" style="color:#999999;font-size:2em;"></span></a>
+                                            </div>
                                         </div>
-                                    </ui:repeat>
+                                    </ui:fragment>
+                                    <ui:fragment rendered="#{DataversePage.dataverse.displayByType}">
+                                        <div id="categoryDataversesBlock" style="overflow: hidden; border-top:1px solid #ddd; padding-top:.5em;">
+                                            <div class="clearfix"><strong>Dataverses by Category</strong></div>
+                                            <div class="customNavigation" style="width:4%;float:left;padding:28px 0;">
+                                                <a class="btn prev2" title="Previous"><span class="glyphicon glyphicon-chevron-left" style="color:#999999;font-size:2em;"></span></a>
+                                            </div>
+                                            <div id="categoryDataversesList" class="owl-carousel owl-theme" style="width:90%;float:left;">
+                                                <div class="item"><span class="glyphicon glyphicon-user" style="font-size:2.5em;"></span><br/>Researchers</div>
+                                                <div class="item"><span class="glyphicon glyphicon-film" style="font-size:2.5em;"></span><br/>Research Projects</div>
+                                                <div class="item"><span class="glyphicon glyphicon-book" style="font-size:2.5em;"></span><br/>Journals</div>
+                                                <div class="item"><span class="glyphicon glyphicon-home" style="font-size:2.5em;"></span><br/>Organizations &amp; Institutions</div>
+                                                <div class="item"><span class="glyphicon glyphicon-tree-conifer" style="font-size:2.5em;"></span><br/>Teaching &amp; Courses</div>
+                                            </div>
+                                            <div class="customNavigation" style="width:4%;float:left;padding:28px 0;">
+                                                <a class="btn next2" title="Next"><span class="glyphicon glyphicon-chevron-right" style="color:#999999;font-size:2em;"></span></a>
+                                            </div>
+                                        </div>
+                                    </ui:fragment>
                                 </div>
-                                <div class="customNavigation" style="width:4%;float:left;padding:28px 0;">
-                                    <a class="btn next1" title="Next"><span class="glyphicon glyphicon-chevron-right" style="color:#999999;font-size:2em;"></span></a>
-                                </div>
-                            </div>
+                            </ui:fragment>
                         </ui:fragment>
-                        <ui:fragment rendered="#{DataversePage.dataverse.displayByType}">
-                            <div style="overflow: hidden;">
-                                <div class="clearfix"><strong>Dataverses by Type</strong></div>
-                                <div class="customNavigation" style="width:4%;float:left;padding:28px 0;">
-                                    <a class="btn prev2" title="Previous"><span class="glyphicon glyphicon-chevron-left" style="color:#999999;font-size:2em;"></span></a>
-                                </div>
-                                <div id="featuredDataversesList" class="owl-carousel owl-theme" style="width:90%;float:left;">
-                                    <div class="item"><span class="glyphicon glyphicon-user" style="font-size:2.5em;"></span><br/>Researchers</div>
-                                    <div class="item"><span class="glyphicon glyphicon-film" style="font-size:2.5em;"></span><br/>Research Projects</div>
-                                    <div class="item"><span class="glyphicon glyphicon-book" style="font-size:2.5em;"></span><br/>Journals</div>
-                                    <div class="item"><span class="glyphicon glyphicon-home" style="font-size:2.5em;"></span><br/>Organizations &amp; Institutions</div>
-                                    <div class="item"><span class="glyphicon glyphicon-tree-conifer" style="font-size:2.5em;"></span><br/>Teaching &amp; Courses</div>
-                                </div>
-                                <div class="customNavigation" style="width:4%;float:left;padding:28px 0;">
-                                    <a class="btn next2" title="Next"><span class="glyphicon glyphicon-chevron-right" style="color:#999999;font-size:2em;"></span></a>
-                                </div>
-                            </div>
-                        </ui:fragment>
+
                     </ui:fragment>
 
+                    <!-- Browsing Options Form -->
                     <p:dialog header="Browsing Options" widgetVar="browseOptsForm" modal="true">
-                        <p:selectBooleanCheckbox styleClass="facet-category-default" value="#{DataversePage.dataverse.displayByType}" 
-                                                 itemLabel="Display 'Dataverse by Type' Carousel on Front Page"/>
-                        <p:selectBooleanCheckbox styleClass="facet-category-default" value="#{DataversePage.dataverse.displayFeatured}" 
-                                                 itemLabel="Display 'Featured Dataverses' Carousel on Front Page"/>
+                        <div class="form-group">
+                            <!--<p:selectBooleanCheckbox value="    #    {DataversePage.dataverse.displayByType}" 
+                                                 itemLabel="Display 'Dataverse by Category' Carousel on Front Page"/>-->
+                        </div>
+                        <div class="form-group">
+                            <p:selectBooleanCheckbox value="#{DataversePage.dataverse.displayFeatured}" 
+                                                     itemLabel="Display 'Featured Dataverses' Carousel on Front Page"/>
+                        </div>
                         <div class="form-group">
                             <label for="exampleInputFile">Featured Dataverses</label>
                             <p class="help-block">Selected Dataverses to feature on the front page of your Dataverse.</p>
@@ -341,39 +381,124 @@
                                         itemValue="#{featureddataverse}" converter="dataverseConverter"
                                         showSourceFilter="true" showTargetFilter="true" />
                         </div>
-
                         <h:commandButton type="submit" action="#{DataversePage.save()}" class="btn btn-success" value="Save Changes"/>
                         <button type="button" class="btn btn-default" onclick="browseOptsForm.hide()" value="Cancel">Cancel</button>
                     </p:dialog>
+                    <!-- Theme and Widgets Form -->
+                    <p:dialog header="Theme + Widgets" widgetVar="themeAndWidgetsForm" modal="true" styleClass="themeWidgetsPopUp">
+                        <p:tabView id="tabView" widgetVar="content">
+                            <p:tab id="widgetsTab" title="Widgets">
+                                <div>
+                                    <p class="bg-info" style="padding: 15px;">Copy and paste this code into the HTML on your site.</p>
+                                </div>
+                                <div>
+                                    <h5>
+                                        Dataverse Search Box
+                                    </h5>
+                                    <span class="text-muted">Add a way for visitors on your website to be able to search Dataverse.</span>
+                                </div>
+                                <div>
+                                    <textarea rows="3" cols="54" class="form-control">&lt;script src=&quot;#{DataversePage.dataverseSiteUrl}/resources/js/widgets.js?id=#{DataversePage.dataverse.id}&amp;amp;dvUrl=#{DataversePage.dataverseSiteUrl}&amp;amp;widget=search&quot;&gt;&lt;/script&gt;
+                                    </textarea>
+                                </div>
+                                <div>
+                                    <h5>
+                                        Dataverse Listing
+                                    </h5>
+                                    <span class="text-muted">Add a way for visitors on your website to be able to view your dataverses and datasets, sort and page through them.</span>
+                                </div>
+                                <div>
+                                    <textarea rows="2" cols="54" class="form-control">&lt;script src=&quot;#{DataversePage.dataverseSiteUrl}/resources/js/widgets.js?id=#{DataversePage.dataverse.id}&amp;amp;dvUrl=#{DataversePage.dataverseSiteUrl}&amp;amp;widget=iframe&quot;&gt;&lt;/script&gt;
+                                    </textarea>
+                                </div>
+                            </p:tab>
+                            <p:tab id="themeTab" title="Theme">
+                                <!-- Dataverse Theme Panel -->
+                                <ui:remove>
+                                    <ui:fragment rendered="#{DataversePage.editMode == 'THEME'}">
+                                        <p:panelGrid columns="3">
+                                            <h:outputLabel value="Logo"/>
+                                            <p:inputText id="logo" value="#{DataversePage.dataverse.logo}"/>
+                                            <p:message for="logo"/>
+
+                                            <h:outputLabel value="Logo Format"/>
+                                            <p:selectOneRadio id="logoFormat" value="#{DataversePage.dataverse.logoFormat}">
+                                                <f:selectItem itemLabel="SQUARE" itemValue="SQUARE"/>
+                                                <f:selectItem itemLabel="RECTANGLE" itemValue="RECTANGLE"/>
+                                            </p:selectOneRadio>
+                                            <p:message for="logoFormat"/>
+
+                                            <h:outputLabel value="Logo Alignment"/>
+                                            <p:selectOneMenu id="logoAlignment" value="#{DataversePage.dataverse.logoAlignment}">
+                                                <f:selectItem id="left" itemLabel="LEFT" itemValue="LEFT" />
+                                                <f:selectItem id="center" itemLabel="CENTER" itemValue="CENTER" />
+                                                <f:selectItem id="right" itemLabel="RIGHT" itemValue="RIGHT" />
+                                            </p:selectOneMenu>
+                                            <p:message for="logoFormat"/>
+
+                                            <h:outputLabel value="Logo Background Color"/>
+                                            <p:inputText id="logoBackgroundColor" value="#{DataversePage.dataverse.logoBackgroundColor}"/>
+                                            <p:message for="logoBackgroundColor"/>
+
+                                            <h:outputLabel value="Tagline"/>
+                                            <p:inputText id="tagline" value="#{DataversePage.dataverse.tagline}"/>
+                                            <p:message for="tagline"/>
+
+                                            <h:outputLabel value="Link URL"/>
+                                            <p:inputText id="linkUrl" value="#{DataversePage.dataverse.linkUrl}"/>
+                                            <p:message for="linkUrl"/>
+
+                                            <h:outputLabel value="Link Text"/>
+                                            <p:inputText id="linkText" value="#{DataversePage.dataverse.linkText}"/>
+                                            <p:message for="linkText"/>
+
+                                            <h:outputLabel value="Link Color"/>
+                                            <p:inputText id="linkColor" value="#{DataversePage.dataverse.linkColor}"/>
+                                            <p:message for="linkColor"/>
+
+                                            <h:outputLabel value="Text Color"/>
+                                            <p:inputText id="textColor" value="#{DataversePage.dataverse.textColor}"/>
+                                            <p:message for="textColor"/>
+
+                                            <h:outputLabel value="Background Color"/>
+                                            <p:inputText id="backgroundColor" value="#{DataversePage.dataverse.backgroundColor}"/>
+                                            <p:message for="backgroundColor"/>
+                                        </p:panelGrid>
+                                        <h:commandButton type="submit" disabled="true" action="#{DataversePage.save()}" class="btn btn-success" value="Save Changes"/>
+                                    </ui:fragment>
+                                </ui:remove>
+                                <h:outputText value="Theme updates are not available at this time." />
+                            </p:tab>
+                        </p:tabView>
+                        <button type="button" style="margin-top:1em;" class="btn btn-default" onclick="themeAndWidgetsForm.hide()" value="Done">Done</button>
+                    </p:dialog>
 
                     <!-- Dialog Feedback Form -->
-
                     <p:confirmDialog message="Are you sure you want to publish your dataverse? Once you do so it must remain 'Published'." header="Publish Dataverse" widgetVar="confirmation">
                         <p:commandButton value="Continue" onclick="confirmation.hide()" action="#{DataversePage.releaseDataverse}">
                         </p:commandButton>
-                        <p:commandButton value="Cancel" onclick="confirmation.hide()" type="button" />
+                        <p:commandButton value="Cancel" onclick="confirmation.hide();" type="button" />
                     </p:confirmDialog>
                     <p:confirmDialog message="This dataverse may not be published because its host dataverse has not been published." header="May not publish" widgetVar="mayNotRelease">
                     </p:confirmDialog>
                     <p:confirmDialog message="Are you sure you want to delete your dataverse? This action may not be 'Undone'." header="Delete Dataverse" widgetVar="deleteConfirmation">
                         <p:commandButton value="Continue" onclick="deleteConfirmation.hide()" action="#{DataversePage.deleteDataverse}">
                         </p:commandButton>
-                        <p:commandButton value="Cancel" onclick="deleteConfirmation.hide()" type="button" />
+                        <p:commandButton value="Cancel" onclick="deleteConfirmation.hide();" type="button" />
                     </p:confirmDialog>
+
                     <!-- Dataverse Theme Panel -->
                     <ui:fragment rendered="#{DataversePage.editMode == 'THEME'}">
                         <p:panelGrid columns="3">
                             <h:outputLabel value="Logo"/>
                             <p:inputText id="logo" value="#{DataversePage.dataverse.logo}"/>
                             <p:message for="logo"/>
-
                             <h:outputLabel value="Logo Format"/>
                             <p:selectOneRadio id="logoFormat" value="#{DataversePage.dataverse.logoFormat}">
                                 <f:selectItem itemLabel="SQUARE" itemValue="SQUARE"/>
                                 <f:selectItem itemLabel="RECTANGLE" itemValue="RECTANGLE"/>
                             </p:selectOneRadio>
                             <p:message for="logoFormat"/>
-
                             <h:outputLabel value="Logo Alignment"/>
                             <p:selectOneMenu id="logoAlignment" value="#{DataversePage.dataverse.logoAlignment}">
                                 <f:selectItem id="left" itemLabel="LEFT" itemValue="LEFT" />
@@ -381,31 +506,24 @@
                                 <f:selectItem id="right" itemLabel="RIGHT" itemValue="RIGHT" />
                             </p:selectOneMenu>
                             <p:message for="logoFormat"/>
-
                             <h:outputLabel value="Logo Background Color"/>
                             <p:inputText id="logoBackgroundColor" value="#{DataversePage.dataverse.logoBackgroundColor}"/>
                             <p:message for="logoBackgroundColor"/>
-
                             <h:outputLabel value="Tagline"/>
                             <p:inputText id="tagline" value="#{DataversePage.dataverse.tagline}"/>
                             <p:message for="tagline"/>
-
                             <h:outputLabel value="Link URL"/>
                             <p:inputText id="linkUrl" value="#{DataversePage.dataverse.linkUrl}"/>
                             <p:message for="linkUrl"/>
-
                             <h:outputLabel value="Link Text"/>
                             <p:inputText id="linkText" value="#{DataversePage.dataverse.linkText}"/>
                             <p:message for="linkText"/>
-
                             <h:outputLabel value="Link Color"/>
                             <p:inputText id="linkColor" value="#{DataversePage.dataverse.linkColor}"/>
                             <p:message for="linkColor"/>
-
                             <h:outputLabel value="Text Color"/>
                             <p:inputText id="textColor" value="#{DataversePage.dataverse.textColor}"/>
                             <p:message for="textColor"/>
-
                             <h:outputLabel value="Background Color"/>
                             <p:inputText id="backgroundColor" value="#{DataversePage.dataverse.backgroundColor}"/>
                             <p:message for="backgroundColor"/>
@@ -424,6 +542,8 @@
                 <ui:fragment rendered="#{empty DataversePage.editMode}">
                     <ui:include src="search-include-fragment.xhtml">
                         <ui:param name="showAdvancedSearchLink" value="true"/>
+                        <ui:param name="showFacets" value="true"/>
+                        <ui:param name="showSearch" value="true"/>
                     </ui:include>
                 </ui:fragment>
 
@@ -432,42 +552,57 @@
                     $(document).ready(function() {
                         initPopover();
                         characterCounter();
+                        initCarousel();
+                    });
 
-                        var owl1 = $("#typeDataversesList");
-                        var owl2 = $("#featuredDataversesList");
+                    function initCarousel() {
+                        var owl1 = $("#featuredDataversesList");
+                        var owl2 = $("#categoryDataversesList");
 
                         owl1.owlCarousel({
+                            pagination: false,
+                            navigation: false,
+                            // navigationText: ["<span class=\"glyphicon glyphicon-chevron-left\" style=\"color:#999999;font-size:2em;\"></span>","<span class=\"glyphicon glyphicon-chevron-right\" style=\"color:#999999;font-size:2em;\"></span>"],
                             items: 4, //10 items above 1000px browser width
                             itemsDesktop: [1140, 4], //5 items between 1000px and 901px
                             itemsDesktopSmall: [940, 3], // betweem 900px and 601px
-                            itemsTablet: [720, 3], //2 items between 600 and 0
+                            itemsTablet: [720, 2], //2 items between 600 and 0
                             itemsMobile: false // itemsMobile disabled - inherit from itemsTablet option
                         });
-
-                        // Custom Navigation Events
-                        $(".next1").click(function() {
-                            owl1.trigger('owl.next');
-                        });
-                        $(".prev1").click(function() {
-                            owl1.trigger('owl.prev');
-                        });
+                        if (owl1.find('div.owl-item').length > 4) {
+                            // Custom Navigation Events
+                            $(".next1").click(function() {
+                                owl1.trigger('owl.next');
+                            });
+                            $(".prev1").click(function() {
+                                owl1.trigger('owl.prev');
+                            });
+                        } else {
+                            $("#featuredDataversesBlock .customNavigation a.btn").hide();
+                        }
 
                         owl2.owlCarousel({
+                            pagination: false,
+                            navigation: false,
+                            // navigationText: ["<span class=\"glyphicon glyphicon-chevron-left\" style=\"color:#999999;font-size:2em;\"></span>","<span class=\"glyphicon glyphicon-chevron-right\" style=\"color:#999999;font-size:2em;\"></span>"],
                             items: 4, //10 items above 1000px browser width
                             itemsDesktop: [1140, 4], //5 items between 1000px and 901px
                             itemsDesktopSmall: [940, 3], // betweem 900px and 601px
-                            itemsTablet: [720, 3], //2 items between 600 and 0
+                            itemsTablet: [720, 2], //2 items between 600 and 0
                             itemsMobile: false // itemsMobile disabled - inherit from itemsTablet option
                         });
-
-                        // Custom Navigation Events
-                        $(".next2").click(function() {
-                            owl2.trigger('owl.next');
-                        });
-                        $(".prev2").click(function() {
-                            owl2.trigger('owl.prev');
-                        });
-                    });
+                        if (owl2.find('div.owl-item').length > 4) {
+                            // Custom Navigation Events
+                            $(".next2").click(function() {
+                                owl2.trigger('owl.next');
+                            });
+                            $(".prev2").click(function() {
+                                owl2.trigger('owl.prev');
+                            });
+                        } else {
+                            $("#categoryDataversesBlock .customNavigation a.btn").hide();
+                        }
+                    }
 
                     function initPopover() {
                         $('#content label.control-label[data-toggle="popover"]').popover();

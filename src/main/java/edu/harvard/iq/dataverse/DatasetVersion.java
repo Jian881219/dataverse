@@ -186,10 +186,11 @@ public class DatasetVersion implements Serializable {
     }
     
     public String getVersionDate(){
-        if (lastUpdateTime == null){
-            return new SimpleDateFormat("MMMM d, yyyy").format(releaseTime);
-        }
         return new SimpleDateFormat("MMMM d, yyyy").format(lastUpdateTime);
+    }
+    
+    public String getVersionYear(){
+        return new SimpleDateFormat("yyyy").format(lastUpdateTime);
     }
 
     public Date getReleaseTime() {
@@ -505,17 +506,14 @@ public class DatasetVersion implements Serializable {
         }
 
         //Get root dataverse name for Citation
-        Dataverse root = this.getDataset().getOwner();
-        while (root.getOwner() != null) {
-            root = root.getOwner();
-        }
-        String rootDataverseName = root.getName();
-        if (!StringUtil.isEmpty(rootDataverseName)) {
+        String dataverseName = getRootDataverseNameforCitation();
+        if (!StringUtil.isEmpty(dataverseName)) {
             if (!StringUtil.isEmpty(str)) {
                 str += ", ";
             }
-            str += " " + rootDataverseName + " Dataverse";
-        }        
+            str += " " + dataverseName;
+        } 
+        
         if (this.isDraft()){
             if (!StringUtil.isEmpty(str)) {
                 str += ", ";
@@ -561,6 +559,21 @@ public class DatasetVersion implements Serializable {
         //todo get dist date from datasetfieldvalue table
         return "UNF";
     }
+    
+    public String getRootDataverseNameforCitation(){
+                    //Get root dataverse name for Citation
+        Dataverse root = this.getDataset().getOwner();
+        while (root.getOwner() != null) {
+            root = root.getOwner();
+        }
+        String rootDataverseName = root.getName();
+        if (!StringUtil.isEmpty(rootDataverseName)) {
+            return rootDataverseName + " Dataverse"; 
+        } else {
+            return "";
+        }
+    }
+
 
     public List<DatasetDistributor> getDatasetDistributors() {
         //todo get distributors from DatasetfieldValues
@@ -587,6 +600,9 @@ public class DatasetVersion implements Serializable {
         return getAuthorsStr(true);
     }
 
+    /**
+     * @todo Does this correctly include affiliation if you ask for it?
+     */
     public String getAuthorsStr(boolean affiliation) {
         String str = "";
         for (DatasetAuthor sa : getDatasetAuthors()) {
@@ -595,8 +611,10 @@ public class DatasetVersion implements Serializable {
             }
             str += sa.getName().getValue();
             if (affiliation) {
-                if (!StringUtil.isEmpty(sa.getAffiliation().getValue())) {
-                    str += " (" + sa.getAffiliation().getValue() + ")";
+                if (sa.getAffiliation() != null) {
+                    if (!StringUtil.isEmpty(sa.getAffiliation().getValue())) {
+                        str += " (" + sa.getAffiliation().getValue() + ")";
+                    }
                 }
             }
         }
@@ -666,6 +684,28 @@ public class DatasetVersion implements Serializable {
         return retList;
     }
 
+    /**
+     * For the current server, create link back to this Dataset
+     * 
+     * example: http://dvn-build.hmdc.harvard.edu/dataset.xhtml?id=72&versionId=25
+     * 
+     * @param serverName
+     * @param dset
+     * @return 
+     */
+    public String getReturnToDatasetURL(String serverName, Dataset dset){
+        if (serverName==null){
+            return null;
+        }
+        if (dset==null){
+            dset = this.getDataset();
+            if (dset==null){        // currently postgres allows this, see https://github.com/IQSS/dataverse/issues/828
+                return null;
+            }
+        }
+        return serverName + "/dataset.xhtml?id=" + dset.getId() + "&versionId" + this.getId();
+    };
+    
     public List<DatasetField> copyDatasetFields(List<DatasetField> copyFromList) {
         List<DatasetField> retList = new ArrayList();
 
